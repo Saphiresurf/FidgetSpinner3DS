@@ -16,6 +16,7 @@ int main() {
 	sf2d_init();
 	hidInit();
 
+	// Temporary debug console for the top
 	consoleInit(GFX_TOP, NULL);
 
 	// Create a texture for the fidget spinner
@@ -24,14 +25,20 @@ int main() {
 	sf2d_texture* topScreen     = sfil_load_PNG_buffer(topscr_png,   SF2D_PLACE_RAM);
 
 	// Speed of the spinner
-	static int SPEED = 1.0;
+	static float SPEED 			= 0.01;
 
 	// Position of the spinner on the screen
-	int posx = (320 / 2); //- (fidgetSpinner->width   / 2);
-	int posy = (240 / 2); //- (fidgetSpinner->height  / 2);
+	int posx 					= (320 / 2); //- (fidgetSpinner->width   / 2);
+	int posy 					= (240 / 2); //- (fidgetSpinner->height  / 2);
 
 	// The angle at which the spinner rotates
-	float angle = 0.0f;
+	float angle 				= 0.0f;
+
+	// The amount of inertia being acted upon the spinner
+	float inertia 				= 0.0f;
+
+	// Distance between the starting point of the swipe and the end point
+	int touchDistance			= 0;
 
 	// Used for what keys were pressed down this frame
 	u32 keyDown;
@@ -45,9 +52,6 @@ int main() {
 
 	// Current coordinate being touched on the touch screen
 	touchPosition touch;
-
-	// Distance between the starting point of the swipe and the end point
-	int touchDistance = 0;
 
 
 
@@ -71,14 +75,19 @@ int main() {
 		// Stores the first point on the screen the user touches
 		// When the touch screen is being touched for the first time we record that coordinate to firstTouch
 		if (keyDown & KEY_TOUCH) {
-			hidTouchRead(&touch);
-			firstTouch = touch;
+			hidTouchRead(&firstTouch);
 		}
 
 		// Stores the last point on the screen that the user touches
 		// When the touch screen stopped being touched as of this frame we record the last coordinate to lastTouch
 		if (keyUp & KEY_TOUCH) {
 			lastTouch = touch;
+
+			// Get some pythagorean on this know whatta mean (computing the distance between the two points)
+			// This is only calculated when the touch screen was just released, that way we aren't calculating unecessarily
+			// Also so we can zero out touchDistance after it's been used
+			touchDistance = sqrt( (abs(firstTouch.px - lastTouch.px) ^ 2) - (abs(firstTouch.py - lastTouch.py) ^ 2) )
+							* (firstTouch.px > lastTouch.px ? -1 : 1);
 		}
 
 		if (keyDown & KEY_START) {
@@ -89,11 +98,10 @@ int main() {
 		// Refresh what point on the screen is being pressed
 		hidTouchRead(&touch);
 
-		//printf("X1: %u\nY1: %u\nX2: %u\nY2: %u", firstTouch.px, firstTouch.py, lastTouch.px, lastTouch.py);
+		printf("X1: %u\nY1: %u\nX2: %u\nY2: %u\n", firstTouch.px, firstTouch.py, lastTouch.px, lastTouch.py);
 
-		// Get some pythagorean on this know whatta mean
-		touchDistance = sqrt( ((lastTouch.px - firstTouch.px) ^ 2) - ((lastTouch.py - firstTouch.py) ^ 2) );
-		printf("TOUCH DISTANCE: %d", touchDistance);
+
+		printf("TOUCH DISTANCE: %d\n", touchDistance);
 
 
 
@@ -103,17 +111,23 @@ int main() {
 		//sf2d_draw_texture(topScreen, 0, 0);
 		//sf2d_end_frame();
 
+		inertia = inertia + ((SPEED) * touchDistance);
+
+		// The angle at which the fidget spinner is going to be shown on the screen
+		angle = angle + inertia;
+		printf("Angle: %f", angle);
+
+
 		// Draw the finna spidget on the bottom screen
 		sf2d_start_frame(GFX_BOTTOM, GFX_LEFT);
 		sf2d_draw_texture_rotate(fidgetSpinner, posx, posy, angle);
 		sf2d_end_frame();
 
-		// Increase the speed of the spinning
-		angle = angle + ((SPEED) * touchDistance);
-
-		// touchDistance = 0;
-
+		// Draw our buffer to the screen
 		sf2d_swapbuffers();
+
+		// Zero out touchDistance so it doesn't add the previous value to inertia
+		touchDistance = 0;
 	}
 
 	sf2d_free_texture(topScreen);
