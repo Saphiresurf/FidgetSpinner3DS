@@ -33,6 +33,7 @@ int main() {
 
 	// The angle at which the spinner rotates
 	float angle 				= 0.0f;
+	float prevAngle				= 0.0f;
 
 	// The amount of inertia being acted upon the spinner
 	float inertia 				= 0.0f;
@@ -98,12 +99,10 @@ int main() {
 		// Refresh what point on the screen is being pressed
 		hidTouchRead(&touch);
 
-		printf("X1: %u\nY1: %u\nX2: %u\nY2: %u\n", firstTouch.px, firstTouch.py, lastTouch.px, lastTouch.py);
+		//printf("X1: %u\nY1: %u\nX2: %u\nY2: %u\n", firstTouch.px, firstTouch.py, lastTouch.px, lastTouch.py);
 
 
-		printf("TOUCH DISTANCE: %d\n", touchDistance);
-
-
+		//printf("TOUCH DISTANCE: %d\n", touchDistance);
 
 
 		// Draw whatever the fuck that is on the top screen (no 3D)
@@ -111,11 +110,19 @@ int main() {
 		//sf2d_draw_texture(topScreen, 0, 0);
 		//sf2d_end_frame();
 
-		inertia = inertia + ((SPEED) * touchDistance);
+		// Inertia to act upon the fidget spinner
+		// If the
+		inertia = inertia + (((SPEED) * touchDistance) * ((touchDistance / touchDistance) == (angle < prevAngle ? 1.0 : -1.0) ? 1.0 : 40.0));
+		printf("touchDistance: %d, angle: %f, prevAngle: %f\n", touchDistance, angle, prevAngle);
+		printf("angleDir: %f logic: %d\n", angle < prevAngle ? 1.0 : -1.0, (touchDistance / touchDistance) == (angle < prevAngle ? 1.0 : -1.0));
+
+		prevAngle = angle;
+
 
 		// The angle at which the fidget spinner is going to be shown on the screen
 		angle = angle + inertia;
-		printf("Angle: %f", angle);
+
+		//printf("Angle: %f", angle);
 
 
 		// Draw the finna spidget on the bottom screen
